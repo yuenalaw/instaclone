@@ -21,5 +21,17 @@ export default NextAuth({
 
   pages: {
       signIn: "/auth/signin", //be aware, one is camel case, the other is not!
+  },
+  callbacks: {
+    async session({session, token, user}) {
+      //upgrade the code instead of just having username, email, image
+      session.user.username = session.user.name
+        .split(" ")
+        .join("")
+        .toLocaleLowerCase();
+      
+      session.user.uid = token.sub //google's token id that comes back
+      return session; 
+    }
   }
 });

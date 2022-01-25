@@ -9,20 +9,30 @@ import {
 } from "@heroicons/react/outline";
 import { HomeIcon } from "@heroicons/react/solid";
 import { signIn, signOut, useSession } from "next-auth/react";
+import { useRouter } from "next/router";
+import { useRecoilState } from "recoil";
+import { modalState } from "../atoms/modalAtom";
 
 export default function Header() {
     const { data: session } = useSession(); //rename it as "session"
-    console.log(session);
+    const router = useRouter();
+
+    //for read only values you can jsut do 
+    /**
+     * const open = useRecoilValue(modalState);
+     */
+    const [open, setOpen] = useRecoilState(modalState);
+
     return (
         <div className="shadow-sm border-b bg-white sticky top-0 z-50">
             <div className="flex justify-between max-w-6xl mx-5 lg:mx-auto">
                 {/* Left */}
-                <div className='relative hidden lg:inline-grid w-24 cursor-pointer'>
+                <div onClick={()=> router.push("/")} className='relative hidden lg:inline-grid w-24 cursor-pointer'>
                     <Image src="https://links.papareact.com/ocw" 
                     layout="fill"
                     objectFit="contain"/>
                 </div>
-                <div className='relative w-10 lg:hidden flex-shrink-0 cursor-pointer'>
+                <div onClick={()=> router.push("/")} className='relative w-10 lg:hidden flex-shrink-0 cursor-pointer'>
                     <Image src="https://links.papareact.com/jjm" 
                     layout="fill"
                     objectFit="contain"/>
@@ -41,7 +51,7 @@ export default function Header() {
                 {/* Right */}
 
                 <div className="flex items-center justify-end space-x-4">
-                    <HomeIcon className="navBtn"/>
+                    <HomeIcon onClick={()=>router.push("/")} className="navBtn"/>
                     <MenuIcon className="h-6 md:hidden cursor-pointer"/>
                     {session ? (
                         <>
@@ -51,7 +61,7 @@ export default function Header() {
                                 Y
                             </div>
                         </div>
-                        <PlusCircleIcon className="navBtn"/>
+                        <PlusCircleIcon onClick={() => setOpen(true)} className="navBtn"/>
                         <UserGroupIcon className="navBtn"/>
                         <HeartIcon className="navBtn"/>
                         <img src={session?.user?.image} 
