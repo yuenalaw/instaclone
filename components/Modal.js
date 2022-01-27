@@ -4,17 +4,59 @@ import { Dialog, Transition } from "@headlessui/react";
 import { Fragment } from "react";
 import { CameraIcon, CopyIcon } from "@heroicons/react/outline";
 import { useRef, useState } from "react";
+import {db, storage} from "../firebase";
+import { addDoc, collection, serverTimestamp } from "@firebase/firestore";
+import { useSession } from "next-auth/react";
+import { ref, getDownloadURL, uploadString } from "firebase/storage";
+
 
 export default function Modal(){
+    const {data:session} = useSession();
     const [open,setOpen] = useRecoilState(modalState);
     const filePickerRef = useRef(null);
     const captionRef = useRef(null);
     const [selectedFile, setSelectedFile] = useState(null);
+    const [loading, setLoading] = useState(false);
 
     const uploadPost = async () => {
         if (loading) return;
 
         setLoading(true);
+
+        //create a post and add to firestore 'posts' collection
+        //then we get the post id for the new post
+        //upload image to firebase storage with that post id
+        //get a download url from firebase storage and update original post with img
+
+
+        //addDoc allows us to add a doc to collection
+        const docRef = await addDoc(collection(db, 'posts'),{
+            username: session.user.username,
+            caption: captionRef.current.value,
+            profileImg: session.user.image,
+            timestamp: serverTimestamp(),
+        });
+
+        console.log("id of most recent doc: ", docRef.id);
+
+        const imageRef = ref(storage, `posts/${docRef.id}/image`);
+        //this "posts" is a bucket in firebase storage, 
+        //but we will organize it in a way that's very neat.
+
+        //now we upload the FILE to firebase storage.
+        await uploadString(imageRef, selectedFile, "data_url").then(async snapshot => {
+            const downloadURL = await getDownloadURL(imageRef);
+            //we've uploaded the POST to firestore, then uploaded image to firebase storage
+            //now we got download url from firebase storage
+            //we now need to update original document with new image
+            await updateDoc(doc(db,'posts',docRef.id),{
+                image: downloadURL,
+            })
+        });
+
+        setOpen(false);
+        setLoading(false);
+        setSelectedFile(null);
         
     }
 
@@ -111,13 +153,15 @@ export default function Modal(){
                                     />
                                 </div>
                                 <button
+                                    onClick={uploadPost}
                                     type="button"
+                                    disabled={!selectedFile}
                                     className="inline-flex justify-center w-full rounded-md border border-transparent shadow-sm
                                     px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none
                                     focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:text-sm disabled:bg-gray-300
                                     disabled:cursor-not-allowed hover:disabled:bg-gray-300"
                                 >
-                                    Upload post
+                                    {loading ? "Uploading..." : "Upload Post"}
                                 </button>
                             </div>
                         </div>
